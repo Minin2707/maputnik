@@ -27,6 +27,30 @@ docker run -it --rm -p 8888:8000 ghcr.io/maplibre/maputnik:main --help
 ```
 You might need to mount a volume (`-v`) to be able to use these options.
 
+## Install this fork as a package
+
+Use Node.js 24 and npm 11. Replace `<full-commit-sha>` with the full SHA of a
+commit containing the packaging changes:
+
+```bash
+npm install --save-exact "git+https://github.com/Minin2707/maputnik.git#<full-commit-sha>" --foreground-scripts
+```
+
+Keep lifecycle scripts enabled: npm installs the build dependencies and runs
+`prepare` before packing a Git dependency. The package is private to prevent
+registry publication; it contains a static browser application, with no Node.js
+or React library entry point. Its bundled libraries and build tools are kept in
+`devDependencies`, so installing the prepared package adds no runtime dependencies.
+
+Serve the contents of `node_modules/maputnik/dist/` at `/maputnik/`, including
+the generated MapLibre worker, `THIRD_PARTY_LICENSES.md` and
+`THIRD_PARTY_NOTICES.txt`. Retain the package's
+`LICENSE`, `LICENSES/`, and `THIRD_PARTY_NOTICES.md` when redistributing it.
+
+To check a local archive, run `npm pack` and install the resulting `.tgz` into a
+separate project. This checks the prepared archive only; installation from GitHub
+and its `prepare` lifecycle must also be verified using the pushed commit SHA.
+
 ## Documentation
 
 The documentation can be found in the [Wiki](https://github.com/maplibre/maputnik/wiki). You are welcome to collaborate!

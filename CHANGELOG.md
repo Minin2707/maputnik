@@ -1,6 +1,7 @@
 ## main
 
 ### ✨ Features and improvements
+- Package the built browser application for installation from a pinned GitHub commit, with bundled licenses and third-party notices.
 - Replace Cypress with Playwright for end-to-end tests and Vitest browser mode (Playwright provider) for component tests; drop the `@shellygo/cypress-test-utils` helper in favour of a `MaputnikDriver` page object
 - Upgrade to MapLibre GL JS 6 and Vite 8, and update the remaining dependencies
 - Remove the RTL text plugin, since MapLibre GL JS now renders right-to-left text natively

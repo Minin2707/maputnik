@@ -2,22 +2,22 @@ import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import istanbul from "vite-plugin-istanbul";
 
-export default defineConfig(({ mode }) => ({
+export default defineConfig(({ mode, command }) => ({
   server: {
     port: 8888,
   },
   build: {
-    sourcemap: true,
+    sourcemap: false,
+    license: { fileName: "THIRD_PARTY_LICENSES.md" },
     rolldownOptions: {
       checks: { invalidAnnotation: false },
     },
   },
   plugins: [
     react(),
-    istanbul({
+    command === "serve" && istanbul({
       requireEnv: false,
       nycrcPath: "./.nycrc.json",
-      forceBuildInstrument: true, // Instrument the source so e2e runs can collect coverage
     }),
   ],
   optimizeDeps: {
