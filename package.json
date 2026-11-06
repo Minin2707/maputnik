@@ -1,11 +1,19 @@
 {
   "name": "maputnik",
-  "version": "3.1.0",
+  "version": "3.1.0-fork.1",
   "private": true,
   "description": "A MapLibre GL visual style editor",
   "type": "module",
+  "exports": {
+    "./resources": {
+      "types": "./package/resources.d.ts",
+      "default": "./package/resources.js"
+    }
+  },
   "files": [
     "dist/",
+    "package/resources.js",
+    "package/resources.d.ts",
     "LICENSE",
     "LICENSES/",
     "THIRD_PARTY_NOTICES.md"
@@ -13,7 +21,7 @@
   "scripts": {
     "start": "vite",
     "build": "tsc && vite build --mode=production && node build/third-party-notices.js",
-    "prepare": "npm run build",
+    "prepack": "npm run build",
     "build-desktop": "tsc && vite build --mode=desktop && cd desktop && make",
     "build-linux": "tsc && vite build --mode=desktop && cd desktop && make bin/linux/maputnik",
     "i18n:extract": "npx i18next-cli extract",
@@ -22,6 +30,7 @@
     "test-e2e": "playwright test",
     "test-unit": "vitest",
     "test-unit-ci": "vitest run --coverage --reporter=json",
+    "test:package": "node --test test/package/*.test.js",
     "lint-css": "stylelint \"src/styles/*.scss\"",
     "sort-styles": "jq 'sort_by(.id)' src/config/styles.json > tmp.json && mv tmp.json src/config/styles.json"
   },

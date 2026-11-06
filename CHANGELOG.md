@@ -1,7 +1,7 @@
 ## main
 
 ### ✨ Features and improvements
-- Package the built browser application for installation from a pinned GitHub commit, with bundled licenses and third-party notices.
+- Distribute the built browser application as a versioned GitHub Release npm archive, with licenses, notices and an API for exporting HTML separately from public resources.
 - Replace Cypress with Playwright for end-to-end tests and Vitest browser mode (Playwright provider) for component tests; drop the `@shellygo/cypress-test-utils` helper in favour of a `MaputnikDriver` page object
 - Upgrade to MapLibre GL JS 6 and Vite 8, and update the remaining dependencies
 - Remove the RTL text plugin, since MapLibre GL JS now renders right-to-left text natively
@@ -12,6 +12,7 @@
 - _...Add new stuff here..._
 
 ### 🐞 Bug fixes
+- Reject compressed HTML resources and existing public HTML when exporting the packaged browser application.
 - Prevent a crash when converting a function to an expression
 - Prevent a crash when deleting either stop from a function with two stops
 - Preserve expanded layer groups when deleting layers, including the first layer of a group

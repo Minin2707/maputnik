@@ -30,13 +30,19 @@ jobs:
         id: check
         uses: EndBug/version-check@095362f3cd50f690c8fa0e6afeea81834bd8d320 # latest
 
+      - name: Restrict desktop releases to stable editor versions
+        id: version-kind
+        run: |
+          node --input-type=module -e 'import fs from "node:fs"; const {version} = JSON.parse(fs.readFileSync("package.json", "utf8")); fs.appendFileSync(process.env.GITHUB_OUTPUT, `stable=${/^\d+\.\d+\.\d+$/.test(version)}\n`);'
+
     outputs:
       publish: ${{ steps.check.outputs.changed }}
+      stable: ${{ steps.version-kind.outputs.stable }}
 
   release:
     name: Release
     needs: release-check
-    if: ${{ needs.release-check.outputs.publish == 'true' }}
+    if: ${{ needs.release-check.outputs.publish == 'true' && needs.release-check.outputs.stable == 'true' }}
     runs-on: ubuntu-latest
     defaults:
       run:

@@ -29,27 +29,77 @@ You might need to mount a volume (`-v`) to be able to use these options.
 
 ## Install this fork as a package
 
-Use Node.js 24 and npm 11. Replace `<full-commit-sha>` with the full SHA of a
-commit containing the packaging changes:
+Install a prebuilt archive from a versioned GitHub Release. For example, after
+the `npm-v3.1.0-fork.1` package release has been published:
 
 ```bash
-npm install --save-exact "git+https://github.com/Minin2707/maputnik.git#<full-commit-sha>" --foreground-scripts
+npm install --save-dev --save-exact "https://github.com/Minin2707/maputnik/releases/download/npm-v3.1.0-fork.1/maputnik-3.1.0-fork.1.tgz"
 ```
 
-Keep lifecycle scripts enabled: npm installs the build dependencies and runs
-`prepare` before packing a Git dependency. The package is private to prevent
-registry publication; it contains a static browser application, with no Node.js
-or React library entry point. Its bundled libraries and build tools are kept in
-`devDependencies`, so installing the prepared package adds no runtime dependencies.
+Commit the resulting lock file to retain the URL and integrity. Use the versioned
+asset URL rather than a `latest`, source-archive or Git-dependency URL. Installing
+the release `.tgz` with ordinary lifecycle scripts enabled does not build the
+editor or install its build dependencies. `private: true` prevents registry
+publication. The package contains a static browser application and a small Node
+resource-export API; it is not a React component library.
 
-Serve the contents of `node_modules/maputnik/dist/` at `/maputnik/`, including
-the generated MapLibre worker, `THIRD_PARTY_LICENSES.md` and
-`THIRD_PARTY_NOTICES.txt`. Retain the package's
-`LICENSE`, `LICENSES/`, and `THIRD_PARTY_NOTICES.md` when redistributing it.
+Export HTML separately from public files in a build script:
 
-To check a local archive, run `npm pack` and install the resulting `.tgz` into a
-separate project. This checks the prepared archive only; installation from GitHub
-and its `prepare` lifecycle must also be verified using the pushed commit SHA.
+```js
+import { exportResources } from "maputnik/resources";
+
+await exportResources({
+  htmlFile: "private/maputnik.html",
+  publicDir: "public/maputnik",
+});
+```
+
+Serve the dedicated public directory at `/maputnik/`; that base is preserved in
+HTML, CSS, localization imports and the MapLibre worker URL. Serve the separate
+HTML file through the application's own route and access checks. Do not expose
+the package's entire `dist/` through a static file server.
+
+The API returns resolved absolute `htmlFile` and `publicDir` paths and a `files`
+array of copied public paths. It copies all non-HTML build resources, `LICENSE`,
+`LICENSES/`, `THIRD_PARTY_NOTICES.md`, `THIRD_PARTY_LICENSES.md` and the generated
+`THIRD_PARTY_NOTICES.txt`. Keep these legal files when redistributing the build.
+Output locations must not overlap the installed package. HTML inside the public
+directory, including through a symlink or junction, is rejected. Existing public
+HTML or links within the output tree are also rejected before copying.
+
+Repeated exports overwrite the package's named resources and preserve unrelated
+files. The API does not recursively delete directories or prune old hashed
+assets; use a fresh dedicated output directory for a clean deployment.
+
+## Release a fork package archive
+
+Use Node.js 24 and npm 11.6.2. The `-fork.N` part of the version identifies a
+packaging revision; it does not announce a new upstream stable editor release.
+
+1. Set `package.json` and the root versions in `package-lock.json` to an unused
+   version such as `3.1.0-fork.1` (increase `N` for the next packaging release).
+2. Run `npm ci`, `npm run lint` and `npm run test:package`. The package check runs
+   a real `npm pack`, whose `prepack` builds the editor, then installs the archive
+   offline into an empty project with lifecycle scripts enabled. It checks the
+   archive contents, absence of runtime dependencies, resource links and export
+   API. It does not test the editor's internal UI behavior.
+3. Commit and push the reviewed changes manually. Create and push the matching
+   tag, for example `npm-v3.1.0-fork.1`, on that commit. Ensure GitHub Actions is
+   enabled for the fork. The tag must match the package version exactly.
+4. The separate **Release npm browser package** workflow packs and verifies the
+   archive before creating a GitHub prerelease. It does not publish to npm,
+   create an upstream `v...` tag, mark the package release as latest, or replace
+   an existing release. Never reuse a published tag or overwrite its assets;
+   use a new packaging version instead.
+5. After the workflow succeeds, check the release asset and install its fixed
+   HTTPS URL in a clean project. A local `.tgz` check does not verify a future
+   release URL before that asset exists.
+
+The archive name is `maputnik-<version>.tgz`, at
+`https://github.com/Minin2707/maputnik/releases/download/npm-v<version>/maputnik-<version>.tgz`.
+To retain local test archives and logs, set `MAPUTNIK_PACKAGE_DIR` to an output
+directory before running `npm run test:package`. Ordinary `npm ci` in this source
+repository no longer builds the editor; `prepack` builds it only when packing.
 
 ## Documentation
 
@@ -144,7 +194,10 @@ Unit tests and component tests run with [Vitest](https://vitest.dev/); component
 npm run test-unit
 ```
 
-## Release process
+## Upstream desktop release process
+
+The existing desktop release workflow handles stable editor versions. Fork
+packaging prerelease versions are excluded and use the separate process above.
 
 1. Review [`CHANGELOG.md`](/CHANGELOG.md)
    - Double-check that all changes included in the release are appropriately documented.

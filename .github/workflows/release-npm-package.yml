@@ -1,0 +1,63 @@
+name: Release npm browser package
+
+on:
+  push:
+    tags: ["npm-v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: npm-package-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-package:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.package.outputs.version }}
+      filename: ${{ steps.package.outputs.filename }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+      - name: Use the verified npm version
+        run: npm install --global npm@11.6.2 --no-audit --no-fund
+      - name: Validate the fork package tag
+        id: package
+        run: node build/package-release.js
+      - run: npm ci --no-audit --no-fund
+      - run: npm run lint
+      - name: Pack, install and verify the release archive
+        run: npm run test:package
+        env:
+          MAPUTNIK_PACKAGE_DIR: ${{ runner.temp }}/maputnik-npm
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: npm-browser-package
+          path: ${{ runner.temp }}/maputnik-npm/${{ steps.package.outputs.filename }}
+          if-no-files-found: error
+
+  release-package:
+    needs: build-package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PACKAGE_VERSION: ${{ needs.build-package.outputs.version }}
+      PACKAGE_FILE: ${{ needs.build-package.outputs.filename }}
+    steps:
+      - name: Download the verified npm archive
+        run: gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name npm-browser-package --dir artifact
+      - name: Create a new fork package prerelease
+        run: |
+          printf 'Prebuilt Maputnik browser package %s. This versions the fork packaging, not an upstream stable editor release.\n' "$PACKAGE_VERSION" > notes.md
+          # Creation fails for an existing release. Never replace existing assets.
+          gh release create "$GITHUB_REF_NAME" "artifact/$PACKAGE_FILE" \
+            --repo "$GITHUB_REPOSITORY" --verify-tag \
+            --title "Maputnik npm package $PACKAGE_VERSION" \
+            --notes-file notes.md --prerelease --latest=false

@@ -31,7 +31,8 @@ jobs:
         with:
           node-version-file: '.nvmrc'
       - run: npm ci
-      - run: npm run build
+      - name: Build and verify the npm package contract
+        run: npm run test:package
       - run: npm run lint
       - run: npm run lint-css
 
